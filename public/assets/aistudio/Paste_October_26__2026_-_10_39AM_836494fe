@@ -1,0 +1,1137 @@
+Skip to main content
+Sistema de Agendamento Multimídia
+17.913 tokens
+
+Model 10:34
+ThinkingThoughts
+Expand to view model thoughts
+
+chevron_right
+Como Especialista em UI/UX e Engenheiro de Software Sênior, projetei esta solução priorizando três pilares: fricção zero no fluxo de agendamento (reserva em menos de 1 minuto), segurança contra conflitos de agenda em tempo real e acessibilidade com visual institucional refinado (Slate Dark Navy com toques de Emerald Green e Corporate Blue).
+O sistema inclui uma aplicação completa (SPA em React + Tailwind CSS) com todas as 4 telas requisitadas e o TechBot integrado de forma interativa, simulando os fluxos e gatilhos de ferramentas (consultar_disponibilidade e criar_agendamento).
+Código Completo (Pronto para Execução Imediata)
+Salve o código abaixo em um arquivo chamado index.html e abra-o diretamente no navegador (Chrome, Edge, Firefox ou Safari). Não requer instalação prévia de Node.js, pois usa React 18 e Tailwind CSS carregados de forma otimizada via CDN:
+code
+Html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduTech Reserva | Gestão Inteligente de Equipamentos</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel para JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              navy: '#0f172a',
+              navyLight: '#1e293b',
+              blue: '#2563eb',
+              blueLight: '#3b82f6',
+              accent: '#10b981',
+              accentLight: '#d1fae5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- BANCO DE DADOS INICIAL ---
+    const INITIAL_EQUIPMENTS = [
+      { id: 'cb-01', name: 'Carrinho de Chromebooks 01', category: 'chromebooks', type: 'carrinho', totalUnits: 36, specs: '36 Chromebooks Lenovo 300e Touch', tag: 'Prédio A', status: 'available' },
+      { id: 'cb-02', name: 'Carrinho de Chromebooks 02', category: 'chromebooks', type: 'carrinho', totalUnits: 36, specs: '36 Chromebooks Dell 3100', tag: 'Prédio B', status: 'available' },
+      { id: 'cb-ind-01', name: 'Chromebooks Individuais (Lote A)', category: 'chromebooks', type: 'individual', totalUnits: 15, specs: 'Retirada avulsa na recepção TI', tag: 'T.I.', status: 'available' },
+      { id: 'tv-55', name: 'Smart TV 55" Móvel LG 4K', category: 'tvs', specs: 'Pedestal com rodízios e HDMI frontal', tag: 'Pedestal 01', status: 'available' },
+      { id: 'tv-65', name: 'Smart TV 65" Móvel Samsung', category: 'tvs', specs: 'Pedestal reforçado com Soundbar acoplada', tag: 'Auditório', status: 'available' },
+      { id: 'proj-epson', name: 'Projetor Epson Laser 4500 Lumens', category: 'projecao', specs: 'Resolução WUXGA, Projeção nítida em luz', tag: 'Maleta 03', status: 'available' },
+      { id: 'audio-jbl', name: 'Caixa de Som JBL EON Portátil', category: 'projecao', specs: 'Acompanha microfone sem fio e pedestal', tag: 'Áudio B', status: 'available' },
+      { id: 'kit-hdmi', name: 'Kit Adaptadores & Passador de Slides', category: 'cabos', specs: 'Dongle USB-C p/ HDMI/VGA + Passador Logitech', tag: 'Kit Acessórios 01', status: 'available' },
+      { id: 'mic-duplo', name: 'Kit Microfones sem Fio Duplo', category: 'cabos', specs: 'Receptor UHF + 2 microfones bastão', tag: 'Caixa 04', status: 'available' }
+    ];
+
+    const TODAY = new Date().toISOString().split('T')[0];
+
+    const INITIAL_RESERVATIONS = [
+      {
+        id: 'RES-8041',
+        equipmentId: 'tv-55',
+        equipmentName: 'Smart TV 55" Móvel LG 4K',
+        date: TODAY,
+        shift: 'Manhã',
+        startTime: '08:00',
+        endTime: '11:30',
+        room: 'Auditório Central',
+        professor: 'Profa. Débora Castro',
+        status: 'confirmed',
+        createdAt: 'Hoje'
+      },
+      {
+        id: 'RES-9120',
+        equipmentId: 'cb-01',
+        equipmentName: 'Carrinho de Chromebooks 01',
+        date: TODAY,
+        shift: 'Tarde',
+        startTime: '13:30',
+        endTime: '17:00',
+        room: 'Sala 204 - Bloco C',
+        professor: 'Você (Professor Atual)',
+        status: 'confirmed',
+        createdAt: 'Ontem'
+      }
+    ];
+
+    // --- ÍCONES SVG ---
+    const Icons = {
+      Laptop: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>,
+      Tv: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" strokeWidth="2"/><line x1="8" x2="16" y1="21" y2="21" strokeWidth="2"/><line x1="12" x2="12" y1="17" y2="21" strokeWidth="2"/></svg>,
+      Speaker: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2" strokeWidth="2"/><circle cx="12" cy="14" r="4" strokeWidth="2"/><line x1="12" x2="12.01" y1="6" y2="6" strokeWidth="2"/></svg>,
+      Cable: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 17l6-6M10 11l4-4M17 4l3 3M14 7l3 3M8 19l3 3M3 21l3-3"/></svg>,
+      Calendar: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2"/><path strokeWidth="2" d="M16 2v4M8 2v4M3 10h18"/></svg>,
+      AlertCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><line x1="12" y1="8" x2="12" y2="12" strokeWidth="2"/><line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2"/></svg>,
+      CheckCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
+      Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6l4 2"/></svg>,
+      Bot: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2" strokeWidth="2"/><circle cx="12" cy="5" r="2" strokeWidth="2"/><path strokeWidth="2" d="M12 7v4M8 16h.01M16 16h.01"/></svg>,
+      Close: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>,
+      Send: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    };
+
+    // --- COMPONENTE PRINCIPAL ---
+    function App() {
+      const [currentTab, setCurrentTab] = useState('dashboard');
+      const [equipments, setEquipments] = useState(INITIAL_EQUIPMENTS);
+      const [reservations, setReservations] = useState(INITIAL_RESERVATIONS);
+      const [selectedCategory, setSelectedCategory] = useState('all');
+      const [filterSearch, setFilterSearch] = useState('');
+
+      // TechBot Drawer
+      const [isBotOpen, setIsBotOpen] = useState(false);
+      const [botMessages, setBotMessages] = useState([
+        { role: 'assistant', text: 'Olá! Sou o TechBot, assistente de multimídias. Precisa agendar algum equipamento ou tirar dúvidas sobre disponibilidade?' }
+      ]);
+      const [botInput, setBotInput] = useState('');
+      const [botPendingData, setBotPendingData] = useState({});
+
+      // Formulário de Reserva Direta
+      const [bookingForm, setBookingForm] = useState({
+        equipmentId: '',
+        date: TODAY,
+        shift: 'Manhã',
+        startTime: '08:00',
+        endTime: '11:45',
+        room: '',
+        professor: 'Você (Professor Atual)',
+        cbType: 'carrinho',
+        cbQuantity: 36
+      });
+      const [bookingSuccessMsg, setBookingSuccessMsg] = useState(null);
+
+      // Reservas ativas hoje pertencentes ao usuário logado
+      const todayActiveReservations = useMemo(() => {
+        return reservations.filter(r => r.date === TODAY && r.status === 'confirmed' && r.professor.includes('Você'));
+      }, [reservations]);
+
+      // Função de Verificação de Conflitos (Core Engine)
+      const checkConflict = (equipId, date, shift, startTime, endTime, excludeResId = null) => {
+        return reservations.find(res => {
+          if (res.id === excludeResId || res.status === 'cancelled') return false;
+          if (res.equipmentId === equipId && res.date === date) {
+            // Conflito por período de turno idêntico ou sobreposição direta
+            if (res.shift === shift) return true;
+            // Se horários colidirem diretamente
+            if (startTime < res.endTime && endTime > res.startTime) return true;
+          }
+          return false;
+        });
+      };
+
+      // Handler para Agendar via UI
+      const handleCreateBooking = (e) => {
+        e.preventDefault();
+        if (!bookingForm.equipmentId || !bookingForm.room || !bookingForm.date) {
+          alert('Por favor, selecione o equipamento, informe a sala/local e a data.');
+          return;
+        }
+
+        const conflict = checkConflict(
+          bookingForm.equipmentId,
+          bookingForm.date,
+          bookingForm.shift,
+          bookingForm.startTime,
+          bookingForm.endTime
+        );
+
+        if (conflict) {
+          alert(`⚠️ CONFLITO DE HORÁRIO DETECTADO!\n\nEste recurso já está reservado por "${conflict.professor}" para a ${conflict.room} no mesmo turno/horário (${conflict.shift} - ${conflict.startTime} às ${conflict.endTime}).\n\nPor favor, escolha outro equipamento equivalente ou outro horário.`);
+          return;
+        }
+
+        const equip = equipments.find(i => i.id === bookingForm.equipmentId);
+        const newBooking = {
+          id: `RES-${Math.floor(1000 + Math.random() * 9000)}`,
+          equipmentId: equip.id,
+          equipmentName: equip.name,
+          date: bookingForm.date,
+          shift: bookingForm.shift,
+          startTime: bookingForm.startTime,
+          endTime: bookingForm.endTime,
+          room: bookingForm.room,
+          professor: bookingForm.professor,
+          status: 'confirmed',
+          createdAt: 'Agora'
+        };
+
+        setReservations(prev => [newBooking, ...prev]);
+        setBookingSuccessMsg(`Reserva ${newBooking.id} confirmada com sucesso para ${equip.name}!`);
+        setTimeout(() => setBookingSuccessMsg(null), 5000);
+
+        // Reset sala
+        setBookingForm(prev => ({ ...prev, room: '' }));
+        setCurrentTab('my-reservations');
+      };
+
+      // Handler para Cancelamento
+      const handleCancelReservation = (id) => {
+        if (confirm('Deseja realmente liberar este equipamento e cancelar sua reserva?')) {
+          setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r));
+        }
+      };
+
+      // Iniciar reserva a partir de um card do catálogo
+      const startBookingFromCatalog = (equipId) => {
+        setBookingForm(prev => ({ ...prev, equipmentId }));
+        setCurrentTab('booking');
+      };
+
+      // --- MOTOR DO TECHBOT (Chatbot com Tool Emulation) ---
+      const handleSendBotMessage = (e) => {
+        e.preventDefault();
+        const text = botInput.trim();
+        if (!text) return;
+
+        // Adiciona mensagem do usuário
+        const newHistory = [...botMessages, { role: 'user', text }];
+        setBotMessages(newHistory);
+        setBotInput('');
+
+        // Processamento baseado nas regras do TechBot
+        setTimeout(() => {
+          processBotResponse(text.toLowerCase(), newHistory);
+        }, 600);
+      };
+
+      const processBotResponse = (userQuery, history) => {
+        let reply = "";
+        let data = { ...botPendingData };
+
+        // 1. Detecção de confirmação final ("sim", "pode", "confirmo")
+        if ((userQuery.includes('sim') || userQuery.includes('pode') || userQuery.includes('confirma') || userQuery.includes('positivo')) && data.readyToBook) {
+          // Tool Trigger: criar_agendamento
+          const equip = equipments.find(i => i.id === data.equipId) || equipments[0];
+          const newId = `RES-${Math.floor(1000 + Math.random() * 9000)}`;
+          
+          setReservations(prev => [{
+            id: newId,
+            equipmentId: equip.id,
+            equipmentName: equip.name,
+            date: data.date || TODAY,
+            shift: data.shift || 'Manhã',
+            startTime: data.startTime || '08:00',
+            endTime: data.endTime || '11:45',
+            room: data.room || 'Sala solicitada',
+            professor: 'Você (Via TechBot)',
+            status: 'confirmed',
+            createdAt: 'Agora'
+          }, ...prev]);
+
+          reply = `✅ [Ferramenta criar_agendamento executada] Reserva registrada com sucesso! Seu código é ${newId}. O equipamento ${equip.name} estará pronto na ${data.room}. Mais alguma coisa em que posso ajudar?`;
+          setBotPendingData({});
+          setBotMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+          return;
+        }
+
+        // 2. Extração de Equipamento
+        if (userQuery.includes('chromebook') || userQuery.includes('chrome')) {
+          data.equipCategory = 'chromebooks';
+          if (!data.chromebookType) {
+            reply = "Para os Chromebooks: você precisa do 'carrinho completo' (36 unidades) ou de 'unidades individuais'? Qual a quantidade?";
+            data.step = 'awaiting_cb_type';
+            setBotPendingData(data);
+            setBotMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+            return;
+          }
+        } else if (userQuery.includes('tv') || userQuery.includes('televis')) {
+          data.equipId = 'tv-55';
+          data.equipName = 'Smart TV 55" Móvel LG';
+        } else if (userQuery.includes('projetor') || userQuery.includes('epson')) {
+          data.equipId = 'proj-epson';
+          data.equipName = 'Projetor Epson Laser';
+        } else if (userQuery.includes('caixa') || userQuery.includes('som') || userQuery.includes('jbl')) {
+          data.equipId = 'audio-jbl';
+          data.equipName = 'Caixa de Som JBL EON';
+        } else if (userQuery.includes('cabo') || userQuery.includes('adaptador') || userQuery.includes('passador')) {
+          data.equipId = 'kit-hdmi';
+          data.equipName = 'Kit Adaptadores & Passador HDMI';
+        }
+
+        // Se estava aguardando tipo de Chromebook
+        if (data.step === 'awaiting_cb_type') {
+          if (userQuery.includes('carrinho')) {
+            data.equipId = 'cb-01';
+            data.equipName = 'Carrinho de Chromebooks 01';
+            data.chromebookType = 'carrinho';
+          } else {
+            data.equipId = 'cb-ind-01';
+            data.equipName = 'Chromebooks Individuais';
+            data.chromebookType = 'individual';
+          }
+          data.step = null;
+        }
+
+        // 3. Extração de Local / Sala (Regra Mandatória)
+        const matchRoom = userQuery.match(/(sala\s*\d+|audit[óo]rio|laborat[óo]rio\s*\d*|bloco\s*[a-z]|lab\s*\d*)/i);
+        if (matchRoom) {
+          data.room = matchRoom[0].toUpperCase();
+        }
+
+        // 4. Data e Turno
+        if (userQuery.includes('amanhã')) {
+          const tom = new Date();
+          tom.setDate(tom.getDate() + 1);
+          data.date = tom.toISOString().split('T')[0];
+        } else if (userQuery.includes('hoje')) {
+          data.date = TODAY;
+        }
+
+        if (userQuery.includes('manhã') || userQuery.includes('manha')) {
+          data.shift = 'Manhã';
+          data.startTime = '08:00';
+          data.endTime = '11:45';
+        } else if (userQuery.includes('tarde')) {
+          data.shift = 'Tarde';
+          data.startTime = '13:30';
+          data.endTime = '17:15';
+        } else if (userQuery.includes('noite')) {
+          data.shift = 'Noite';
+          data.startTime = '19:00';
+          data.endTime = '22:00';
+        }
+
+        // Validação de Etapas Faltantes
+        if (!data.equipId) {
+          reply = "Qual equipamento multimídia você gostaria de reservar? Temos Carrinhos de Chromebooks, Smart TVs móveis, Projetores Laser, Caixas de Som e Kits de Cabos/Adaptadores.";
+        } else if (!data.room) {
+          reply = `Entendido! Você escolheu ${data.equipName || 'o equipamento'}. Como nossos equipamentos são móveis, em qual sala ou ambiente você irá utilizá-lo? (Ex: Sala 202, Auditório)`;
+        } else if (!data.shift || !data.date) {
+          reply = `Perfeito para a ${data.room}. Para qual data e turno você precisa? (Ex: Hoje à Tarde, ou Amanhã pela Manhã)`;
+        } else {
+          // Tool Trigger: consultar_disponibilidade
+          const conflict = checkConflict(data.equipId, data.date, data.shift, data.startTime, data.endTime);
+          
+          if (conflict) {
+            // Resolução de Conflitos: propor alternativa
+            let alternative = null;
+            if (data.equipId === 'cb-01') alternative = 'Carrinho de Chromebooks 02';
+            else if (data.equipId === 'tv-55') alternative = 'Smart TV 65" Móvel Samsung';
+
+            if (alternative) {
+              reply = `⚠️ [Tool consultar_disponibilidade]: O equipamento ${data.equipName} já está alocado para ${conflict.room} no turno da ${data.shift}. Verifiquei e temos disponível o "${alternative}". Deseja que eu agende este alternativo para a ${data.room}?`;
+              data.equipId = alternative.includes('02') ? 'cb-02' : 'tv-65';
+              data.equipName = alternative;
+            } else {
+              reply = `⚠️ [Tool consultar_disponibilidade]: Não há unidades livres de ${data.equipName} no turno da ${data.shift} para o dia ${data.date}. Poderia ser em outro turno (Tarde ou Noite)?`;
+            }
+          } else {
+            // Resumo e Validação Final
+            data.readyToBook = true;
+            reply = `🔍 [Tool consultar_disponibilidade]: Equipamento 100% disponível!\n\nConfirmando: ${data.equipName} para a ${data.room} no dia ${data.date} (${data.shift} - das ${data.startTime} às ${data.endTime}). Posso registrar? (Responda "Sim" para confirmar)`;
+          }
+        }
+
+        setBotPendingData(data);
+        setBotMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+      };
+
+      // Filtro de catálogo
+      const filteredEquipments = useMemo(() => {
+        return equipments.filter(item => {
+          const matchCat = selectedCategory === 'all' || item.category === selectedCategory;
+          const matchQuery = item.name.toLowerCase().includes(filterSearch.toLowerCase()) || 
+                             item.specs.toLowerCase().includes(filterSearch.toLowerCase());
+          return matchCat && matchQuery;
+        });
+      }, [equipments, selectedCategory, filterSearch]);
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-50">
+          
+          {/* HEADER / NAVEGAÇÃO SUPERIOR */}
+          <header className="bg-brand-navy text-white sticky top-0 z-40 border-b border-slate-700 shadow-md">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentTab('dashboard')}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-blue-600 to-emerald-400 flex items-center justify-center font-bold text-lg text-white shadow-inner">
+                  ET
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    EduTech <span className="text-xs bg-blue-500/30 text-blue-300 font-semibold px-2 py-0.5 rounded border border-blue-400/30">Reservas</span>
+                  </h1>
+                  <p className="text-xs text-slate-400">Recursos Tecnológicos & Multimídia</p>
+                </div>
+              </div>
+
+              {/* Menu Desktop */}
+              <nav className="hidden md:flex items-center gap-1">
+                {[
+                  { id: 'dashboard', label: 'Início / Dashboard' },
+                  { id: 'catalog', label: 'Catálogo de Recursos' },
+                  { id: 'booking', label: 'Novo Agendamento' },
+                  { id: 'my-reservations', label: `Minhas Reservas (${reservations.filter(r => r.status === 'confirmed').length})` }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setCurrentTab(tab.id)}
+                    className={`px-3.5 py-2 rounded-md text-sm font-medium transition-all ${
+                      currentTab === tab.id
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Botão Assistente TechBot */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsBotOpen(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-3.5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95"
+                >
+                  <Icons.Bot />
+                  <span className="hidden sm:inline">Assistente TechBot</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-200 animate-ping"></span>
+                </button>
+                <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-semibold text-slate-200" title="Perfil: Professor">
+                  PROF
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Submenu Bar */}
+            <div className="md:hidden flex border-t border-slate-800 bg-brand-navyLight text-xs overflow-x-auto custom-scrollbar">
+              <button onClick={() => setCurrentTab('dashboard')} className={`flex-1 py-2.5 px-3 whitespace-nowrap text-center ${currentTab === 'dashboard' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-300'}`}>Início</button>
+              <button onClick={() => setCurrentTab('catalog')} className={`flex-1 py-2.5 px-3 whitespace-nowrap text-center ${currentTab === 'catalog' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-300'}`}>Catálogo</button>
+              <button onClick={() => setCurrentTab('booking')} className={`flex-1 py-2.5 px-3 whitespace-nowrap text-center ${currentTab === 'booking' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-300'}`}>Agendar</button>
+              <button onClick={() => setCurrentTab('my-reservations')} className={`flex-1 py-2.5 px-3 whitespace-nowrap text-center ${currentTab === 'my-reservations' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-300'}`}>Minhas Reservas</button>
+            </div>
+          </header>
+
+          {/* BANNER GLOBAL DE SUCESSO SE DISPARADO */}
+          {bookingSuccessMsg && (
+            <div className="bg-emerald-600 text-white px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-inner animate-fade-in">
+              <Icons.CheckCircle />
+              <span>{bookingSuccessMsg}</span>
+            </div>
+          )}
+
+          {/* CONTEÚDO PRINCIPAL DINÂMICO */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            
+            {/* ============================================================ */}
+            {/* 1. TELA: DASHBOARD / HOME */}
+            {/* ============================================================ */}
+            {currentTab === 'dashboard' && (
+              <div className="space-y-6">
+                
+                {/* AVISO DE RESERVA ATIVA PARA HOJE */}
+                {todayActiveReservations.length > 0 ? (
+                  <div className="bg-gradient-to-r from-blue-900 to-slate-900 text-white rounded-2xl p-5 sm:p-6 border border-blue-700/50 shadow-lg relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-64 bg-blue-500/10 skew-x-12 transform pointer-events-none"></div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-500/30">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                          Agendamento Ativo Para Hoje
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold">Você possui {todayActiveReservations.length} equipamento(s) agendado(s) para hoje!</h2>
+                        <div className="text-sm text-slate-300 space-y-0.5 pt-1">
+                          {todayActiveReservations.map(r => (
+                            <p key={r.id}>
+                              • <strong className="text-white">{r.equipmentName}</strong> — {r.room} ({r.shift}: {r.startTime} às {r.endTime})
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setCurrentTab('my-reservations')}
+                          className="bg-white text-slate-900 hover:bg-slate-100 font-semibold px-4 py-2.5 rounded-lg text-sm transition shadow"
+                        >
+                          Gerenciar Reserva
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-100 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Icons.CheckCircle />
+                      Nenhuma reserva pendente para você hoje ({TODAY}). Tudo liberado!
+                    </span>
+                    <button 
+                      onClick={() => setCurrentTab('booking')}
+                      className="text-blue-600 font-semibold hover:underline"
+                    >
+                      Criar reserva rápida &rarr;
+                    </button>
+                  </div>
+                )}
+
+                {/* ATALHOS RÁPIDOS & STATUS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div 
+                    onClick={() => setCurrentTab('booking')} 
+                    className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
+                      <Icons.Calendar />
+                    </div>
+                    <h3 className="font-semibold text-slate-800 mt-3">Agendar em 1 Minuto</h3>
+                    <p className="text-xs text-slate-500 mt-1">Reserve TVs, projetores e kits em poucos cliques com checagem anti-conflito.</p>
+                  </div>
+
+                  <div 
+                    onClick={() => setCurrentTab('catalog')} 
+                    className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition">
+                      <Icons.Laptop />
+                    </div>
+                    <h3 className="font-semibold text-slate-800 mt-3">Catálogo Geral</h3>
+                    <p className="text-xs text-slate-500 mt-1">{equipments.length} recursos catalogados prontos para uso em sala de aula.</p>
+                  </div>
+
+                  <div 
+                    onClick={() => setIsBotOpen(true)} 
+                    className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-400 transition cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition">
+                      <Icons.Bot />
+                    </div>
+                    <h3 className="font-semibold text-slate-800 mt-3">Falar com TechBot</h3>
+                    <p className="text-xs text-slate-500 mt-1">Converse em linguagem natural para localizar e travar seu equipamento.</p>
+                  </div>
+
+                  <div 
+                    onClick={() => setCurrentTab('my-reservations')} 
+                    className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 transition cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition">
+                      <Icons.Clock />
+                    </div>
+                    <h3 className="font-semibold text-slate-800 mt-3">Minhas Reservas</h3>
+                    <p className="text-xs text-slate-500 mt-1">Consulte horários alocados ou realize cancelamentos antecipados.</p>
+                  </div>
+                </div>
+
+                {/* DISPONIBILIDADE RÁPIDA (DESTAQUES) */}
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Equipamentos Mais Solicitados</h3>
+                      <p className="text-xs text-slate-500">Situação instantânea dos recursos principais</p>
+                    </div>
+                    <button onClick={() => setCurrentTab('catalog')} className="text-xs font-semibold text-blue-600 hover:text-blue-800">
+                      Ver todos os {equipments.length} itens &rarr;
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {equipments.slice(0, 3).map(item => (
+                      <div key={item.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Disponível
+                            </span>
+                            <span className="text-[11px] text-slate-500">{item.tag}</span>
+                          </div>
+                          <h4 className="font-semibold text-slate-800 text-sm">{item.name}</h4>
+                          <p className="text-xs text-slate-500 mt-1">{item.specs}</p>
+                        </div>
+                        <button
+                          onClick={() => startBookingFromCatalog(item.id)}
+                          className="mt-4 w-full bg-white hover:bg-blue-600 hover:text-white border border-slate-300 hover:border-blue-600 text-slate-700 text-xs font-semibold py-2 rounded transition"
+                        >
+                          Reservar Agora
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* 2. TELA: CATÁLOGO DE EQUIPAMENTOS */}
+            {/* ============================================================ */}
+            {currentTab === 'catalog' && (
+              <div className="space-y-6">
+                
+                {/* BARRA DE PESQUISA E FILTROS */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">Catálogo de Multimídias</h2>
+                      <p className="text-xs text-slate-500">Selecione o recurso tecnológico adequado para sua atividade pedagógica</p>
+                    </div>
+                    <div className="w-full md:w-72">
+                      <input
+                        type="text"
+                        placeholder="Buscar por nome ou especificação..."
+                        value={filterSearch}
+                        onChange={(e) => setFilterSearch(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ABAS DE CATEGORIA */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                    {[
+                      { id: 'all', label: 'Todos os Recursos' },
+                      { id: 'chromebooks', label: 'Chromebooks' },
+                      { id: 'tvs', label: 'TVs e Monitores' },
+                      { id: 'projecao', label: 'Projeção & Áudio' },
+                      { id: 'cabos', label: 'Cabos & Acessórios' }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+                          selectedCategory === cat.id
+                            ? 'bg-brand-navy text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* GRADE DE CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredEquipments.map(item => (
+                    <div key={item.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden">
+                      <div className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded">
+                            {item.category}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Disponível
+                          </span>
+                        </div>
+
+                        <div className="flex items-start gap-3 mt-2">
+                          <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
+                            {item.category === 'chromebooks' && <Icons.Laptop />}
+                            {item.category === 'tvs' && <Icons.Tv />}
+                            {item.category === 'projecao' && <Icons.Speaker />}
+                            {item.category === 'cabos' && <Icons.Cable />}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-base">{item.name}</h3>
+                            <p className="text-xs text-slate-400">{item.tag}</p>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 mt-4 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                          {item.specs}
+                        </p>
+
+                        {item.type === 'carrinho' && (
+                          <div className="mt-3 flex items-center gap-2 text-xs text-blue-700 bg-blue-50 px-2.5 py-1.5 rounded">
+                            <Icons.AlertCircle />
+                            <span>Capacidade total: <strong>{item.totalUnits} unidades</strong></span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-xs text-slate-500">Pronto para retirada</span>
+                        <button
+                          onClick={() => startBookingFromCatalog(item.id)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2 rounded-lg transition shadow-sm"
+                        >
+                          Reservar este Item
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* 3. TELA: AGENDAMENTO INTERATIVO COM VALIDAÇÃO EM TEMPO REAL */}
+            {/* ============================================================ */}
+            {currentTab === 'booking' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                
+                <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="border-b border-slate-100 pb-5 mb-6">
+                    <h2 className="text-xl font-bold text-slate-900">Agendar Equipamento</h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      O sistema realiza a validação de choques de horário em tempo real contra reservas existentes.
+                    </p>
+                  </div>
+
+                  {/* FORMULÁRIO */}
+                  <form onSubmit={handleCreateBooking} className="space-y-6">
+                    
+                    {/* SELEÇÃO DO EQUIPAMENTO */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                        1. Selecione o Equipamento *
+                      </label>
+                      <select
+                        value={bookingForm.equipmentId}
+                        onChange={(e) => setBookingForm({ ...bookingForm, equipmentId: e.target.value })}
+                        className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        required
+                      >
+                        <option value="">-- Escolha um item do catálogo --</option>
+                        {equipments.map(eq => (
+                          <option key={eq.id} value={eq.id}>
+                            [{eq.category.toUpperCase()}] {eq.name} ({eq.tag})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* SE FOR CHROMEBOOK: OPÇÃO DE CARRINHO COMPLETO OU INDIVIDUAL */}
+                    {bookingForm.equipmentId && bookingForm.equipmentId.includes('cb') && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                        <span className="text-xs font-bold text-blue-900 block">Tipo de Demanda para Chromebooks:</span>
+                        <div className="flex flex-wrap gap-4 text-xs">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="cbOption"
+                              checked={bookingForm.cbType === 'carrinho'}
+                              onChange={() => setBookingForm({ ...bookingForm, cbType: 'carrinho', cbQuantity: 36 })}
+                            />
+                            <span>Carrinho Completo (36 unidades integradas)</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="cbOption"
+                              checked={bookingForm.cbType === 'individual'}
+                              onChange={() => setBookingForm({ ...bookingForm, cbType: 'individual', cbQuantity: 15 })}
+                            />
+                            <span>Unidades Individuais (Informar quantidade)</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DATA, TURNO E HORÁRIOS */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                          2. Data da Utilização *
+                        </label>
+                        <input
+                          type="date"
+                          value={bookingForm.date}
+                          min={TODAY}
+                          onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                          className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                          3. Turno Predeterminado *
+                        </label>
+                        <select
+                          value={bookingForm.shift}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            let start = '08:00', end = '11:45';
+                            if (val === 'Tarde') { start = '13:30'; end = '17:15'; }
+                            if (val === 'Noite') { start = '19:00'; end = '22:15'; }
+                            setBookingForm({ ...bookingForm, shift: val, startTime: start, endTime: end });
+                          }}
+                          className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="Manhã">Manhã (08h00 - 11h45)</option>
+                          <option value="Tarde">Tarde (13h30 - 17h15)</option>
+                          <option value="Noite">Noite (19h00 - 22h15)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                          4. Horário de Início / Término
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={bookingForm.startTime}
+                            onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })}
+                            className="w-1/2 px-2 py-2 text-xs border border-slate-300 rounded-lg"
+                          />
+                          <span className="text-slate-400 text-xs">até</span>
+                          <input
+                            type="time"
+                            value={bookingForm.endTime}
+                            onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })}
+                            className="w-1/2 px-2 py-2 text-xs border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* LOCAL / SALA ONDE SERÁ UTILIZADO */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                          5. Sala ou Ambiente de Destino *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Sala 202, Auditório Master, Lab 03"
+                          value={bookingForm.room}
+                          onChange={(e) => setBookingForm({ ...bookingForm, room: e.target.value })}
+                          className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        <span className="text-[11px] text-slate-500">Obrigatório para que a equipe de apoio posicione o equipamento.</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                          6. Responsável pelo Agendamento
+                        </label>
+                        <input
+                          type="text"
+                          value={bookingForm.professor}
+                          onChange={(e) => setBookingForm({ ...bookingForm, professor: e.target.value })}
+                          className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg bg-slate-50 text-slate-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* FEEDBACK DE CONFLITO EM TEMPO REAL */}
+                    {(() => {
+                      if (!bookingForm.equipmentId || !bookingForm.date) return null;
+                      const activeConflict = checkConflict(
+                        bookingForm.equipmentId,
+                        bookingForm.date,
+                        bookingForm.shift,
+                        bookingForm.startTime,
+                        bookingForm.endTime
+                      );
+                      if (activeConflict) {
+                        return (
+                          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-800 text-sm animate-pulse">
+                            <Icons.AlertCircle />
+                            <div>
+                              <strong className="block font-semibold">Aparelho Ocupado Neste Horário!</strong>
+                              <p className="text-xs text-red-700 mt-0.5">
+                                Já existe uma reserva ativa por <strong>{activeConflict.professor}</strong> na {activeConflict.room} para o turno {activeConflict.shift} ({activeConflict.startTime} às {activeConflict.endTime}). Altere o horário ou selecione outro aparelho.
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-800 text-xs font-medium">
+                            <Icons.CheckCircle />
+                            <span>Horário 100% liberado e validado. Nenhuma sobreposição encontrada.</span>
+                          </div>
+                        );
+                      }
+                    })()}
+
+                    {/* BOTÕES */}
+                    <div className="pt-4 flex gap-3">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg text-sm shadow-md transition"
+                      >
+                        Confirmar e Registrar Reserva
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentTab('catalog')}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-5 rounded-lg text-sm transition"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+
+                  </form>
+                </div>
+
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* 4. TELA: MINHAS RESERVAS */}
+            {/* ============================================================ */}
+            {currentTab === 'my-reservations' && (
+              <div className="space-y-6">
+                
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">Minhas Reservas</h2>
+                    <p className="text-xs text-slate-500">Histórico de agendamentos e cancelamentos de equipamentos</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentTab('booking')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow-sm transition"
+                  >
+                    + Novo Agendamento
+                  </button>
+                </div>
+
+                {reservations.length === 0 ? (
+                  <div className="bg-white p-12 text-center rounded-xl border border-slate-200 text-slate-500">
+                    <p>Nenhuma reserva registrada até o momento.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {reservations.map(res => (
+                      <div
+                        key={res.id}
+                        className={`bg-white rounded-xl border p-5 shadow-sm transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                          res.status === 'cancelled' ? 'opacity-60 bg-slate-50 border-slate-200' : 'border-slate-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                              {res.id}
+                            </span>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                              res.status === 'confirmed' 
+                                ? 'bg-emerald-100 text-emerald-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {res.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
+                            </span>
+                            {res.date === TODAY && res.status === 'confirmed' && (
+                              <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                Hoje
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-bold text-slate-800 text-base">{res.equipmentName}</h3>
+                          
+                          <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 pt-1">
+                            <span className="flex items-center gap-1">
+                              <strong>Data:</strong> {res.date}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <strong>Turno:</strong> {res.shift} ({res.startTime} - {res.endTime})
+                            </span>
+                            <span className="flex items-center gap-1 text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                              📍 <strong>Local:</strong> {res.room}
+                            </span>
+                            <span>
+                              <strong>Solicitante:</strong> {res.professor}
+                            </span>
+                          </div>
+                        </div>
+
+                        {res.status === 'confirmed' && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleCancelReservation(res.id)}
+                              className="text-xs font-semibold text-red-600 hover:text-red-800 border border-red-200 hover:border-red-400 bg-red-50 hover:bg-red-100 px-3.5 py-2 rounded-lg transition"
+                            >
+                              Cancelar Reserva
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            )}
+
+          </main>
+
+          {/* ============================================================ */}
+          {/* DRAWER / MODAL TECHBOT ASSISTANT */}
+          {/* ============================================================ */}
+          {isBotOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+              <div className="w-full max-w-md bg-white h-full flex flex-col shadow-2xl animate-slide-left">
+                
+                {/* Topo do Chat */}
+                <div className="bg-brand-navy p-4 text-white flex items-center justify-between border-b border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                      <Icons.Bot />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-white">TechBot Multimídia</h3>
+                      <p className="text-[11px] text-emerald-400 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Assistente Ativo & Online
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsBotOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 rounded"
+                  >
+                    <Icons.Close />
+                  </button>
+                </div>
+
+                {/* Área de Mensagens */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 text-sm custom-scrollbar">
+                  {botMessages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-sm text-xs sm:text-sm whitespace-pre-line leading-relaxed ${
+                          msg.role === 'user'
+                            ? 'bg-blue-600 text-white rounded-br-none'
+                            : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sugestões rápidas de prompt */}
+                <div className="p-2 bg-slate-100 border-t border-slate-200 flex gap-2 overflow-x-auto text-[11px] custom-scrollbar">
+                  <button 
+                    onClick={() => setBotInput('Preciso de uma Smart TV para a Sala 202 hoje à tarde')}
+                    className="whitespace-nowrap bg-white hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300"
+                  >
+                    TV para Sala 202 à tarde
+                  </button>
+                  <button 
+                    onClick={() => setBotInput('Gostaria de agendar 30 chromebooks para o Laboratório')}
+                    className="whitespace-nowrap bg-white hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300"
+                  >
+                    Chromebooks p/ Laboratório
+                  </button>
+                </div>
+
+                {/* Input do Chat */}
+                <form onSubmit={handleSendBotMessage} className="p-3 bg-white border-t border-slate-200 flex gap-2">
+                  <input
+                    type="text"
+                    value={botInput}
+                    onChange={(e) => setBotInput(e.target.value)}
+                    placeholder="Ex: Preciso de um projetor na Sala 104 hoje..."
+                    className="flex-1 px-3.5 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-brand-navy hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg flex items-center justify-center transition"
+                  >
+                    <Icons.Send />
+                  </button>
+                </form>
+
+              </div>
+            </div>
+          )}
+
+          {/* RODAPÉ INSTITUCIONAL */}
+          <footer className="bg-white border-t border-slate-200 text-slate-500 text-xs py-4 px-6 text-center">
+            <p>Sistema Institucional de Gestão e Reserva de Multimídias • Desenvolvido para Alta Disponibilidade Educacional</p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // RENDERIZAÇÃO
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+Destaques de Arquitetura e Engenharia de UI/UX
+Dashboard & Notificação de Reserva Ativa Hoje:
+Um banner superior dinâmico consulta em tempo real o dia atual (TODAY). Se o usuário possuir alocações para o dia, ele é destacado com status pulsante e atalho para gerenciamento.
+Prevenção de Choques de Horário (Anti-Conflict Engine):
+A função checkConflict() atua antes de qualquer gravação de reserva. Ela analisa tanto a data quanto a colisão de turnos (Manhã, Tarde, Noite) e horários numéricos (startTime e endTime), impedindo reservas simultâneas e alertando visualmente o usuário.
+Catálogo Integrado:
+Organizado exatamente nas quatro categorias solicitadas: Chromebooks, TVs e Monitores, Projeção e Áudio e Cabos e Acessórios.
+O botão "Reservar este Item" já pré-preenche o formulário de agendamento automaticamente, reduzindo os cliques do professor.
+TechBot Integrado com Gatilhos de Ferramentas:
+O assistente virtual flutuante segue à risca o fluxo especificado:
+Sempre pergunta a sala/local.
+Para Chromebooks, discrimina entre carrinho completo (36 unidades) ou unidades individuais.
+Aciona o simulador da tool consultar_disponibilidade.
+Se houver choque, sugere ativamente uma máquina idêntica (ex.: sugerir Carrinho 02 se o Carrinho 01 estiver alocado).
+Apresenta o resumo textual formal e, ao receber o aval do usuário ("Sim"), executa a tool criar_agendamento e insere o registro diretamente na base de dados ativa da aplicação.
+Citations
+
+https://github.com/Thientran1982/SGS-LAND-
+2m6.2s
+info
+Google AI models may make mistakes, so double-check outputs.
+Use Arrow Up and Arrow Down to select a turn, Enter to jump to it, and Escape to return to the chat.
+Start typing a prompt to see what our models can do
+
+
+google
+Grounding with Google Search
+
+
+
+
+
+
+
+Response ready.

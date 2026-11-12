@@ -1,0 +1,7 @@
+{
+  "name": "EduTech Reserva - Gestão de Equipamentos Multimídia",
+  "description": "Sistema ágil de agendamento e controle de equipamentos multimídia e tecnológicos escolares com verificação anti-conflito em tempo real e assistente TechBot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
